@@ -120,5 +120,27 @@
 	from Pokoje
 	where Pokoje.Id not in (select Rezerwacje.Id_Pokoju from Rezerwacje)
 
+-- 14) Hotele z Wroc³awia posortowane po liczbie pokojów
 
+	select count(*) as 'liczba pokojów', Hotele.Nazwa as 'Nazwa hotelu',
+	Miasta.Nazwa as miasto
+	from Pokoje, Hotele, Miasta
+	where Pokoje.Id_Hotelu = Hotele.Id
+	and Hotele.Id_Miasta = Miasta.Id
+	and Miasta.Nazwa = 'Wroc³aw'
+	group by Hotele.Nazwa, Miasta.Nazwa
+	order by [liczba pokojów] desc
+	
+-- 15) Mê¿czyŸni, którzy zarezerwowali pokój na parterze piêtrze w jednym z krakowskich hoteli
+	
+	select distinct imie, nazwisko, Pokoje.Numer, Pietro,
+	Hotele.Nazwa as 'Nazwa hotelu', Miasta.Nazwa as miasto
+	from Klienci, Rezerwacje, Pokoje, Hotele, Miasta
+	where Rezerwacje.Id_Klienta = Klienci.Id
+	and Rezerwacje.Id_Pokoju = Pokoje.Id
+	and Pokoje.Id_Hotelu = Hotele.Id
+	and Hotele.Id_Miasta = Miasta.Id
+	and right(imie, 1) != 'a' 
+	and Pietro = 0
+	and Miasta.Nazwa = 'Kraków'
 	
