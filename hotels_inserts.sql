@@ -6,11 +6,11 @@ use HoteleDB;
 
 -- Inserty do tabeli stanowisko --
 
-insert into Stanowiska values ('Dyrektor')
-insert into Stanowiska values ('Kierownik zmiany')
-insert into Stanowiska values ('Obs³uga pokoju')
-insert into Stanowiska values ('Pracownik rejestracji')
-insert into Stanowiska values ('Pracownik techniczny')
+insert into Stanowiska values ('Dyrektor', 15000)
+insert into Stanowiska values ('Kierownik zmiany', 8000)
+insert into Stanowiska values ('Obs³uga pokoju', 3000)
+insert into Stanowiska values ('Pracownik rejestracji', 2500)
+insert into Stanowiska values ('Pracownik techniczny', 2200)
 
 select *from Stanowiska
 

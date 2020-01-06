@@ -11,6 +11,7 @@ use HoteleDB;
 --drop table Rezerwacje;
 --drop table Klienci;
 --drop table Pracownicy;
+--drop table Historia;
 
 -- Tworzenie tabeli stanowiska --
 
@@ -20,6 +21,7 @@ begin
 	create table Stanowiska (
 		Id		int				identity(1, 1)				constraint stanowiska_klucz primary key not null,
 		Nazwa	nvarchar(30)	collate Polish_CS_AS		not null default 'brak nazwy', 
+		Pensja	money										not null default 2500
 	);
 end;
 go
@@ -124,6 +126,19 @@ begin
 		constraint liczba_osob_wieksza_od_zera check(Liczba_osob > 0),
 		constraint data_rozpoczecia_po_2019 check(Data_rozpoczecia > '2018-12-31'),
 		constraint data_zakonczenia_pozniejsza_od_daty_rozpoczecia check(Data_zakonczenia > Data_rozpoczecia)
+	);
+end;
+go
+
+-- Tworzenie tabeli historia --
+
+if db_name()<>'master' and not exists (select * from INFORMATION_SCHEMA.TABLES where table_name='Historia')
+begin
+	Print 'Tworzenie tabeli historia';
+	create table Historia (
+		Nazwa_tabeli		nvarchar(20)								not null,
+		Data_operacji		date										not null,
+		Komunikat			nvarchar(100)	collate Polish_CS_AS		not null default 'brak komunikatu'
 	);
 end;
 go
