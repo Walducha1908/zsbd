@@ -1,8 +1,7 @@
--- Procedury i triggery wykorzystywane do projektu bazy danych dla sieci hoteli
+-- Procedury, funkcje i triggery wykorzystywane do projektu bazy danych dla sieci hoteli
 -- Autorzy: Mateusz Walczak & Konrad Kajszczak
 
 use HoteleDB;
-
 
 
 -- Procedura sluzaca do wprowadzenia podwy¿ki dla pracowników danego stanowiska 
@@ -27,8 +26,6 @@ as
 
 	insert into Historia VALUES ('Stanowiska', GETDATE(), 'Wprowadzono podwyzke o ' + CONVERT(varchar(4), @procent) 
 														+ ' procent dla stanowiska ' + @nazwa_stanowiska);
-	select *from Historia;
-	select *from Stanowiska;
   end
 go
 -- exec podwyzkaDlaStanowiska 3, 10
@@ -59,9 +56,7 @@ as
 	begin
 		insert into Historia VALUES ('Pracownicy', GETDATE(), 'Zwolniono ' + CONVERT(varchar(4), @suma) + ' pracownikow'
 															+ ' ze stanowiska ' + @nazwa_stanowiska + ' w miescie ' + @nazwa_miasta);
-	end	
-													
-	select *from Historia;
+	end													
   end
 go
 -- exec zwolnijWszystkichPracownikowWMiescieNaDanymStanowisku 1, 2
@@ -95,7 +90,6 @@ as
 															+ ' do maksymalnej wartosci ' + CONVERT(varchar(4), @maksymalnaLiczbaOsob));
 	end
 
-	select *from Historia;
   end
 go
 -- exec ograniczLiczbeOsob 5, 3
@@ -122,7 +116,7 @@ as
   end
 go
 
--- SELECT DISTINCT Id, Data_rozpoczecia, Data_zakonczenia, dbo.czasTrwaniaRezerwacji(Id) as 'Liczba dni' from Rezerwacje
+-- select distinct Id, Data_rozpoczecia, Data_zakonczenia, dbo.czasTrwaniaRezerwacji(Id) as 'Liczba dni' from Rezerwacje
 
 
 -- Procedura sluzaca do tworzenia losowych rezerwacji 
@@ -151,3 +145,87 @@ as
 	end
 go
 -- exec losujRezerwacje
+
+
+-- trigger dodaj¹cy informacje do tabeli Historia 
+-- o zwolnieniu pracownika
+
+-- drop trigger zwolnijPracownika
+go
+create trigger zwolnijPracownika
+on Pracownicy
+for delete
+as
+  begin
+	declare @nazwa_miasta nvarchar(20)
+
+	set @nazwa_miasta = (select nazwa from Miasta where Id = (select Id_miasta from deleted))
+	insert into Historia values ('Pracownicy', GETDATE(), 'Zwolniono pracownika o id = ' + CONVERT(varchar(4), (SELECT Id FROM deleted)) +
+														  ' pracowal w miescie ' + @nazwa_miasta);
+
+  end
+go
+
+-- delete from Pracownicy where Id = 10
+
+
+-- trigger sprawdzaj¹cy czy podnoszona pensja nie przekracza
+-- maksymalnej wartosci 50000
+-- jesli przekracza to nie wykonujemy operacji update
+-- w obu przypadkach stosowny komunikat znajdziemy w tabeli Historia
+ 
+-- drop trigger zmianaPensji
+go
+create trigger zmianaPensji
+on Stanowiska
+instead of update
+as
+  begin
+	declare @max_pensja int, @nowa_pensja int
+
+	set @max_pensja = 50000
+	set @nowa_pensja = (select inserted.Pensja from inserted)
+
+	if (@nowa_pensja <= @max_pensja)
+	  begin
+		update Stanowiska set Nazwa = (select inserted.Nazwa from inserted);
+		update Stanowiska set Pensja = (select inserted.Pensja from inserted);
+
+		insert into Historia values ('Stanowiska', GETDATE(), 'Zaktualizowano dane stanowiska ' + 
+															   CONVERT(varchar(30), (SELECT Nazwa FROM deleted)))
+	  end
+	else
+	  begin
+		insert into Historia values ('Stanowiska', GETDATE(), 'Probowano podniesc pensje powyzej wartosci maksymalnej ' + 
+															   CONVERT(varchar(15), @max_pensja) + ' dla stanowiska ' + 
+															   CONVERT(varchar(30), (SELECT Nazwa FROM deleted)))
+	  end
+  end
+go
+
+-- update Stanowiska set Pensja = 50001 where Id = 5
+-- update Stanowiska set Pensja = 5000 where Id = 5
+
+-- trigger wywolujacy procedure ograniczLiczbeOsob
+-- dla nowo dodanej rezerwacji i dla wszystkich innych
+-- rezerwacji tego samego pokoju ograniczam liczbe osob do 2
+
+-- drop trigger nowaRezerwacja
+go
+create trigger nowaRezerwacja
+on Rezerwacje
+after insert
+as
+  begin
+    declare @id_pokoju int
+	set @id_pokoju = (select Id_pokoju from inserted)
+
+	exec dbo.ograniczLiczbeOsob @id_pokoju
+
+	insert into Historia values ('Rezerwacje', GETDATE(), 'Dodano nowa rezerwacje o id ' + 
+															   CONVERT(varchar(4), (SELECT Id FROM inserted)))
+  end
+go
+
+-- exec losujRezerwacje 5
+
